@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZcashDeFi Wallet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 380px;
+            min-height: 600px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+        }
+
+        .header {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .connection-status {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #4ade80;
+        }
+
+        .status-dot.disconnected {
+            background: #f87171;
+            animation: none;
+        }
+
+        .status-dot.connecting {
+            background: #fbbf24;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .settings-btn:hover {
+            background: rgba(247, 147, 26, 0.2);
+        }
+
+        .refresh-btn {
+            position: absolute;
+            top: 20px;
+            right: 60px;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(247, 147, 26, 0.2);
+        }
+
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Connection Error Banner */
+        .error-banner {
+            background: rgba(248, 113, 113, 0.2);
+            border: 1px solid rgba(248, 113, 113, 0.5);
+            padding: 12px 15px;
+            margin: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .error-banner.show {
+            display: block;
+        }
+
+        .error-banner .error-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #fca5a5;
+        }
+
+        .error-banner .error-message {
+            opacity: 0.9;
+        }
+
+        .balance-section {
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .balance-usd {
+            font-size: 16px;
+            opacity: 0.6;
+        }
+
+        .address-display {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: monospace;
+            word-break: break-all;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .address-display:hover {
+            background: rgba(247, 147, 26, 0.1);
+        }
+
+        .address-display .copy-hint {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-top: 5px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 0 20px 20px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            color: #fff;
+        }
+
+        .action-btn:hover {
+            background: rgba(247, 147, 26, 0.2);
+            border-color: rgba(247, 147, 26, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .action-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .tabs {
+            display: flex;
+            padding: 0 20px;
+            gap: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 12px 0;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            opacity: 1;
+            border-bottom-color: #f7931a;
+        }
+
+        .tab:hover {
+            opacity: 1;
+        }
+
+        .content-section {
+            padding: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .token-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .token-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .token-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .token-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .token-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .token-details {
+            text-align: left;
+        }
+
+        .token-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .token-symbol {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .token-balance {
+            text-align: right;
+        }
+
+        .token-amount {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .token-value {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .activity-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(247, 147, 26, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .activity-details {
+            text-align: left;
+        }
+
+        .activity-type {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .activity-amount {
+            text-align: right;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .activity-amount.positive {
+            color: #4ade80;
+        }
+
+        .activity-amount.negative {
+            color: #f87171;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.6;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            width: 340px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 28px;
+            height: 28px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(248, 113, 113, 0.3);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #f7931a;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-hint {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(247, 147, 26, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .address-box {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .fee-estimate {
+            padding: 10px;
+            background: rgba(247, 147, 26, 0.1);
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: rgba(74, 222, 128, 0.2);
+            border: 1px solid rgba(74, 222, 128, 0.5);
+        }
+
+        .status-message.error {
+            background: rgba(248, 113, 113, 0.2);
+            border: 1px solid rgba(248, 113, 113, 0.5);
+        }
+
+        .blockchain-info {
+            font-size: 12px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .blockchain-info div {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .blockchain-info div:last-child {
+            border-bottom: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #f7931a;
+            animation: spin 1s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">⚡ ZcashDeFi</div>
+        <div class="connection-status">
+            <div class="status-dot disconnected" id="statusDot"></div>
+            <span id="networkName">Connecting...</span>
+        </div>
+        <div class="refresh-btn" id="refreshBtn" title="Refresh">🔄</div>
+        <div class="settings-btn" id="settingsBtn" title="Settings">⚙️</div>
+    </div>
+
+    <div class="error-banner" id="errorBanner">
+        <div class="error-title">⚠️ Connection Error</div>
+        <div class="error-message" id="errorMessage">Unable to connect to backend server.</div>
+    </div>
+
+    <div class="balance-section">
+        <div class="balance-label">Total Balance</div>
+        <div class="balance-amount" id="balanceZec">0.00 ZEC</div>
+        <div class="balance-usd" id="balanceUsd">≈ $0.00 USD</div>
+        <div class="address-display" id="addressDisplay" title="Click to copy">
+            <span id="walletAddress">No address</span>
+            <div class="copy-hint">Click to copy address</div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <div class="action-btn" id="sendBtn">
+            <div class="action-icon">📤</div>
+            <div class="action-label">Send</div>
+        </div>
+        <div class="action-btn" id="receiveBtn">
+            <div class="action-icon">📥</div>
+            <div class="action-label">Receive</div>
+        </div>
+        <div class="action-btn" id="swapBtn">
+            <div class="action-icon">🔄</div>
+            <div class="action-label">Swap</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="tokens">Tokens</div>
+        <div class="tab" data-tab="activity">Activity</div>
+        <div class="tab" data-tab="info">Info</div>
+    </div>
+
+    <div class="content-section" id="tokensContent"></div>
+    <div class="content-section" id="activityContent" style="display: none;"></div>
+    <div class="content-section" id="infoContent" style="display: none;">
+        <div class="blockchain-info" id="blockchainInfo">
+            <div><span>Network:</span><span id="infoNetwork">-</span></div>
+            <div><span>Block Height:</span><span id="infoBlockHeight">-</span></div>
+            <div><span>Connections:</span><span id="infoConnections">-</span></div>
+            <div><span>Version:</span><span id="infoVersion">-</span></div>
+        </div>
+    </div>
+
+    <!-- Send Modal -->
+    <div class="modal-overlay" id="sendModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📤 Send ZEC</div>
+                <button class="modal-close" id="closeSendModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="status-message" id="sendStatus"></div>
+                <div class="form-group">
+                    <label class="form-label">Recipient Address</label>
+                    <input type="text" class="form-input" id="sendAddress" placeholder="t1... or zs1...">
+                    <div class="form-hint">Enter a valid Zcash address</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (ZEC)</label>
+                    <input type="number" class="form-input" id="sendAmount" placeholder="0.00" step="0.00000001" min="0">
+                    <div class="form-hint">Available: <span id="availableBalance">0.00</span> ZEC</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Comment (optional)</label>
+                    <input type="text" class="form-input" id="sendComment" placeholder="Payment for...">
+                </div>
+                <div class="fee-estimate" id="feeEstimate">
+                    Estimated fee: ~0.0001 ZEC
+                </div>
+                <button class="btn" id="confirmSendBtn">Send Transaction</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receive Modal -->
+    <div class="modal-overlay" id="receiveModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">📥 Receive ZEC</div>
+                <button class="modal-close" id="closeReceiveModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="status-message" id="receiveStatus"></div>
+                <div class="qr-placeholder">📱</div>
+                <div class="address-box" id="receiveAddress">Loading...</div>
+                <button class="btn" id="copyAddressBtn">Copy Address</button>
+                <button class="btn btn-secondary" id="newAddressBtn" style="margin-top: 10px;">Generate New Address</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">⚙️ Settings</div>
+                <button class="modal-close" id="closeSettingsModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="status-message" id="settingsStatus"></div>
+                <div class="form-group">
+                    <label class="form-label">API Server URL</label>
+                    <input type="text" class="form-input" id="apiUrl" placeholder="http://localhost:3000">
+                    <div class="form-hint">URL of your zcash-api-main backend server</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input type="password" class="form-input" id="apiKey" placeholder="your-api-key">
+                    <div class="form-hint">Your API authentication key</div>
+                </div>
+                <button class="btn" id="saveSettingsBtn">Save & Connect</button>
+                <button class="btn btn-secondary" id="testConnectionBtn" style="margin-top: 10px;">Test Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

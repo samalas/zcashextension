@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZcashDeFi - Test dApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-badge.connected {
+            background: rgba(74, 222, 128, 0.2);
+            color: #4ade80;
+        }
+        
+        .status-badge.disconnected {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #f7931a 0%, #ffcd00 100%);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(247, 147, 26, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+        
+        .result-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #f7931a;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            opacity: 0.7;
+        }
+        
+        .info-value {
+            font-family: monospace;
+        }
+        
+        .log-entry {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .log-entry.info {
+            background: rgba(59, 130, 246, 0.2);
+        }
+        
+        .log-entry.success {
+            background: rgba(74, 222, 128, 0.2);
+        }
+        
+        .log-entry.error {
+            background: rgba(248, 113, 113, 0.2);
+        }
+        
+        .log-entry .timestamp {
+            opacity: 0.6;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ ZcashDeFi Test dApp</h1>
+        <p class="subtitle">Test your Chrome extension integration with the Zcash API backend</p>
+        
+        <!-- Connection Status -->
+        <div class="card">
+            <h2>
+                🔌 Connection Status
+                <span class="status-badge disconnected" id="statusBadge">Checking...</span>
+            </h2>
+            <div id="connectionInfo">
+                <div class="info-row">
+                    <span class="info-label">Extension Detected:</span>
+                    <span class="info-value" id="extensionDetected">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Connected:</span>
+                    <span class="info-value" id="isConnected">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value" id="currentAddress">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Chain ID:</span>
+                    <span class="info-value" id="chainId">-</span>
+                </div>
+            </div>
+            <div style="margin-top: 16px;">
+                <button class="btn" id="connectBtn">Connect Wallet</button>
+                <button class="btn btn-secondary" id="refreshBtn">Refresh Status</button>
+            </div>
+        </div>
+        
+        <!-- Wallet Operations -->
+        <div class="card">
+            <h2>💰 Wallet Operations</h2>
+            <button class="btn" id="getBalanceBtn">Get Balance</button>
+            <button class="btn btn-secondary" id="getAccountsBtn">Get Accounts</button>
+            <button class="btn btn-secondary" id="generateAddressBtn">Generate Address</button>
+            <div class="result-box" id="walletResult">Results will appear here...</div>
+        </div>
+        
+        <!-- Send Transaction -->
+        <div class="card">
+            <h2>📤 Send Transaction</h2>
+            <div class="input-group">
+                <label>Recipient Address</label>
+                <input type="text" id="sendToAddress" placeholder="t1... or zs1...">
+            </div>
+            <div class="input-group">
+                <label>Amount (ZEC)</label>
+                <input type="number" id="sendAmount" placeholder="0.001" step="0.00000001">
+            </div>
+            <div class="input-group">
+                <label>Comment (optional)</label>
+                <input type="text" id="sendComment" placeholder="Test payment">
+            </div>
+            <button class="btn" id="sendTxBtn">Send Transaction</button>
+            <button class="btn btn-secondary" id="validateAddressBtn">Validate Address</button>
+            <div class="result-box" id="sendResult">Transaction results will appear here...</div>
+        </div>
+        
+        <!-- Blockchain Info -->
+        <div class="card">
+            <h2>⛓️ Blockchain Info</h2>
+            <button class="btn" id="getBlockchainInfoBtn">Blockchain Info</button>
+            <button class="btn btn-secondary" id="getNetworkInfoBtn">Network Info</button>
+            <button class="btn btn-secondary" id="estimateFeeBtn">Estimate Fee</button>
+            <button class="btn btn-secondary" id="getTransactionsBtn">Get Transactions</button>
+            <div class="result-box" id="blockchainResult">Blockchain info will appear here...</div>
+        </div>
+        
+        <!-- Event Log -->
+        <div class="card">
+            <h2>📋 Event Log</h2>
+            <button class="btn btn-secondary" id="clearLogBtn">Clear Log</button>
+            <div class="result-box" id="eventLog" style="min-height: 150px;"></div>
+        </div>
+    </div>
+    
+    <script>
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        let provider = null;
+        
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('eventLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="timestamp">${timestamp}</span>${message}`;
+            logEl.insertBefore(entry, logEl.firstChild);
+        }
+        
+        function updateStatus() {
+            const statusBadge = document.getElementById('statusBadge');
+            const extensionDetected = document.getElementById('extensionDetected');
+            const isConnected = document.getElementById('isConnected');
+            const currentAddress = document.getElementById('currentAddress');
+            const chainId = document.getElementById('chainId');
+            
+            if (window.zcashDefi) {
+                provider = window.zcashDefi;
+                extensionDetected.textContent = '✓ Yes';
+                isConnected.textContent = provider.isConnected ? '✓ Yes' : '✗ No';
+                currentAddress.textContent = provider.selectedAddress || 'Not connected';
+                chainId.textContent = provider.chainId || 'zcash-mainnet';
+                
+                if (provider.isConnected) {
+                    statusBadge.textContent = 'Connected';
+                    statusBadge.className = 'status-badge connected';
+                } else {
+                    statusBadge.textContent = 'Not Connected';
+                    statusBadge.className = 'status-badge disconnected';
+                }
+                
+                log('Provider detected: window.zcashDefi', 'success');
+            } else if (window.zcash) {
+                provider = window.zcash;
+                extensionDetected.textContent = '✓ Yes (window.zcash)';
+                log('Provider detected: window.zcash', 'success');
+            } else {
+                extensionDetected.textContent = '✗ No - Install extension';
+                statusBadge.textContent = 'No Extension';
+                statusBadge.className = 'status-badge disconnected';
+                log('No ZcashDeFi provider detected. Install the extension.', 'error');
+            }
+        }
+        
+        // Wait for provider to be injected
+        window.addEventListener('zcashdefi#initialized', () => {
+            log('ZcashDeFi provider initialized event received', 'success');
+            updateStatus();
+        });
+        
+        // Check immediately and after a delay
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(updateStatus, 500);
+        });
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        // Connect button
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            if (!provider) {
+                log('No provider available', 'error');
+                return;
+            }
+            
+            try {
+                log('Connecting to wallet...', 'info');
+                const result = await provider.connect();
+                log(`Connected! Address: ${result.address}`, 'success');
+                updateStatus();
+            } catch (error) {
+                log(`Connection failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Refresh button
+        document.getElementById('refreshBtn').addEventListener('click', updateStatus);
+        
+        // Get Balance
+        document.getElementById('getBalanceBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('walletResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Fetching balance...', 'info');
+                const balance = await provider.getBalance();
+                document.getElementById('walletResult').textContent = JSON.stringify(balance, null, 2);
+                log(`Balance: ${balance.zec} ZEC`, 'success');
+            } catch (error) {
+                document.getElementById('walletResult').textContent = `Error: ${error.message}`;
+                log(`Get balance failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Get Accounts
+        document.getElementById('getAccountsBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('walletResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Fetching accounts...', 'info');
+                const accounts = await provider.getAccounts();
+                document.getElementById('walletResult').textContent = JSON.stringify(accounts, null, 2);
+                log(`Found ${accounts.length} account(s)`, 'success');
+            } catch (error) {
+                document.getElementById('walletResult').textContent = `Error: ${error.message}`;
+                log(`Get accounts failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Generate Address
+        document.getElementById('generateAddressBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('walletResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Generating new address...', 'info');
+                const result = await provider.generateAddress();
+                document.getElementById('walletResult').textContent = JSON.stringify(result, null, 2);
+                log(`New address generated: ${result.address}`, 'success');
+            } catch (error) {
+                document.getElementById('walletResult').textContent = `Error: ${error.message}`;
+                log(`Generate address failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Validate Address
+        document.getElementById('validateAddressBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('sendResult').textContent = 'No provider available';
+                return;
+            }
+            
+            const address = document.getElementById('sendToAddress').value;
+            if (!address) {
+                document.getElementById('sendResult').textContent = 'Please enter an address to validate';
+                return;
+            }
+            
+            try {
+                log(`Validating address: ${address}`, 'info');
+                const result = await provider.validateAddress(address);
+                document.getElementById('sendResult').textContent = JSON.stringify(result, null, 2);
+                log(`Address valid: ${result.isvalid}`, result.isvalid ? 'success' : 'error');
+            } catch (error) {
+                document.getElementById('sendResult').textContent = `Error: ${error.message}`;
+                log(`Validate address failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Send Transaction
+        document.getElementById('sendTxBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('sendResult').textContent = 'No provider available';
+                return;
+            }
+            
+            const to = document.getElementById('sendToAddress').value;
+            const amount = parseFloat(document.getElementById('sendAmount').value);
+            const comment = document.getElementById('sendComment').value;
+            
+            if (!to || !amount) {
+                document.getElementById('sendResult').textContent = 'Please enter address and amount';
+                return;
+            }
+            
+            try {
+                log(`Sending ${amount} ZEC to ${to}...`, 'info');
+                const result = await provider.sendTransaction({
+                    to: to,
+                    amount: amount,
+                    comment: comment
+                });
+                document.getElementById('sendResult').textContent = JSON.stringify(result, null, 2);
+                log(`Transaction sent! Hash: ${result.hash}`, 'success');
+            } catch (error) {
+                document.getElementById('sendResult').textContent = `Error: ${error.message}`;
+                log(`Send transaction failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Blockchain Info
+        document.getElementById('getBlockchainInfoBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('blockchainResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Fetching blockchain info...', 'info');
+                const result = await provider.getBlockchainInfo();
+                document.getElementById('blockchainResult').textContent = JSON.stringify(result, null, 2);
+                log('Blockchain info retrieved', 'success');
+            } catch (error) {
+                document.getElementById('blockchainResult').textContent = `Error: ${error.message}`;
+                log(`Get blockchain info failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Network Info
+        document.getElementById('getNetworkInfoBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('blockchainResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Fetching network info...', 'info');
+                const result = await provider.getNetworkInfo();
+                document.getElementById('blockchainResult').textContent = JSON.stringify(result, null, 2);
+                log('Network info retrieved', 'success');
+            } catch (error) {
+                document.getElementById('blockchainResult').textContent = `Error: ${error.message}`;
+                log(`Get network info failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Estimate Fee
+        document.getElementById('estimateFeeBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('blockchainResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Estimating fee...', 'info');
+                const result = await provider.estimateFee(6);
+                document.getElementById('blockchainResult').textContent = JSON.stringify(result, null, 2);
+                log('Fee estimated', 'success');
+            } catch (error) {
+                document.getElementById('blockchainResult').textContent = `Error: ${error.message}`;
+                log(`Estimate fee failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Get Transactions
+        document.getElementById('getTransactionsBtn').addEventListener('click', async () => {
+            if (!provider) {
+                document.getElementById('blockchainResult').textContent = 'No provider available';
+                return;
+            }
+            
+            try {
+                log('Fetching transactions...', 'info');
+                const result = await provider.getTransactions(10, 0);
+                document.getElementById('blockchainResult').textContent = JSON.stringify(result, null, 2);
+                log(`Retrieved ${Array.isArray(result) ? result.length : 0} transactions`, 'success');
+            } catch (error) {
+                document.getElementById('blockchainResult').textContent = `Error: ${error.message}`;
+                log(`Get transactions failed: ${error.message}`, 'error');
+            }
+        });
+        
+        // Clear Log
+        document.getElementById('clearLogBtn').addEventListener('click', () => {
+            document.getElementById('eventLog').innerHTML = '';
+        });
+        
+        // ============================================
+        // EVENT SUBSCRIPTIONS
+        // ============================================
+        
+        // Subscribe to provider events when available
+        setTimeout(() => {
+            if (provider) {
+                provider.on('connect', (info) => {
+                    log(`Event: connect - ${JSON.stringify(info)}`, 'success');
+                    updateStatus();
+                });
+                
+                provider.on('disconnect', (info) => {
+                    log(`Event: disconnect - ${JSON.stringify(info)}`, 'info');
+                    updateStatus();
+                });
+                
+                provider.on('accountsChanged', (accounts) => {
+                    log(`Event: accountsChanged - ${JSON.stringify(accounts)}`, 'info');
+                    updateStatus();
+                });
+                
+                provider.on('chainChanged', (chainId) => {
+                    log(`Event: chainChanged - ${chainId}`, 'info');
+                    updateStatus();
+                });
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
+

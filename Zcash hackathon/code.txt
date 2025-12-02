@@ -1,0 +1,846 @@
+// ========================================
+// FILE 1: manifest.json
+// ========================================
+{
+  "manifest_version": 3,
+  "name": "ZcashDeFi Wallet",
+  "version": "1.0.0",
+  "description": "Privacy-focused DeFi wallet for Zcash with L2 integration",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
+
+// ========================================
+// FILE 2: background.js
+// ========================================
+
+// Wallet state management
+let walletState = {
+  isLocked: true,
+  address: null,
+  balance: {
+    zec: 0,
+    usd: 0
+  },
+  tokens: [],
+  transactions: [],
+  network: 'mainnet',
+  connectedSites: []
+};
+
+// Initialize extension
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('ZcashDeFi Wallet installed');
+  initializeWallet();
+});
+
+// Initialize wallet with default data
+async function initializeWallet() {
+  const stored = await chrome.storage.local.get(['walletState']);
+  
+  if (!stored.walletState) {
+    // First time setup - generate demo data
+    walletState = {
+      isLocked: false,
+      address: 'zs1' + generateRandomString(76),
+      balance: {
+        zec: 12.45,
+        usd: 498.00
+      },
+      tokens: [
+        { symbol: 'ZEC', name: 'Zcash', amount: 12.45, value: 498.00, icon: '⚡' },
+        { symbol: 'WZEC', name: 'Wrapped ZEC', amount: 5.20, value: 208.00, icon: '🔷' },
+        { symbol: 'ZKT', name: 'ZK Token', amount: 1250.00, value: 125.00, icon: '💎' }
+      ],
+      transactions: [
+        { type: 'send', amount: -2.5, token: 'ZEC', time: Date.now() - 7200000, hash: '0x' + generateRandomString(64) },
+        { type: 'swap', from: '5 ZEC', to: '250 ZKT', time: Date.now() - 86400000, hash: '0x' + generateRandomString(64) },
+        { type: 'receive', amount: 10.0, token: 'ZEC', time: Date.now() - 259200000, hash: '0x' + generateRandomString(64) }
+      ],
+      network: 'mainnet',
+      connectedSites: []
+    };
+    
+    await chrome.storage.local.set({ walletState });
+  } else {
+    walletState = stored.walletState;
+  }
+}
+
+// Generate random string for addresses
+function generateRandomString(length) {
+  const chars = 'abcdef0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Listen for messages from popup or content scripts
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Background received message:', request);
+  
+  switch (request.action) {
+    case 'getWalletState':
+      sendResponse({ success: true, data: walletState });
+      break;
+      
+    case 'updateBalance':
+      updateBalance();
+      sendResponse({ success: true });
+      break;
+      
+    case 'sendTransaction':
+      handleSendTransaction(request.data)
+        .then(result => sendResponse({ success: true, data: result }))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true; // Will respond asynchronously
+      
+    case 'connectSite':
+      handleConnectSite(request.data, sender)
+        .then(result => sendResponse({ success: true, data: result }))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+      
+    case 'getConnectedSites':
+      sendResponse({ success: true, data: walletState.connectedSites });
+      break;
+      
+    case 'switchNetwork':
+      walletState.network = request.network;
+      chrome.storage.local.set({ walletState });
+      sendResponse({ success: true });
+      break;
+      
+    default:
+      sendResponse({ success: false, error: 'Unknown action' });
+  }
+});
+
+// Update balance (mock implementation)
+async function updateBalance() {
+  // In production, this would call Zcash RPC or L2 API
+  const zecPrice = 40.00; // Mock price
+  walletState.balance.usd = walletState.balance.zec * zecPrice;
+  await chrome.storage.local.set({ walletState });
+}
+
+// Handle send transaction
+async function handleSendTransaction(txData) {
+  // Mock transaction - in production would broadcast to network
+  const tx = {
+    type: 'send',
+    amount: -parseFloat(txData.amount),
+    token: txData.token || 'ZEC',
+    to: txData.to,
+    time: Date.now(),
+    hash: '0x' + generateRandomString(64),
+    status: 'pending'
+  };
+  
+  walletState.transactions.unshift(tx);
+  walletState.balance.zec -= parseFloat(txData.amount);
+  
+  await chrome.storage.local.set({ walletState });
+  
+  // Simulate confirmation after 3 seconds
+  setTimeout(async () => {
+    tx.status = 'confirmed';
+    await chrome.storage.local.set({ walletState });
+  }, 3000);
+  
+  return tx;
+}
+
+// Handle site connection request
+async function handleConnectSite(data, sender) {
+  const origin = new URL(sender.url).origin;
+  
+  if (!walletState.connectedSites.includes(origin)) {
+    walletState.connectedSites.push(origin);
+    await chrome.storage.local.set({ walletState });
+  }
+  
+  return {
+    address: walletState.address,
+    network: walletState.network
+  };
+}
+
+// Listen for tab updates to inject content script
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    console.log('Tab updated:', tab.url);
+  }
+});
+
+// ========================================
+// FILE 3: content.js
+// ========================================
+
+console.log('ZcashDeFi content script loaded');
+
+// Inject the Web3 provider into the page
+const script = document.createElement('script');
+script.src = chrome.runtime.getURL('injected.js');
+script.onload = function() {
+  this.remove();
+};
+(document.head || document.documentElement).appendChild(script);
+
+// Listen for messages from the injected script
+window.addEventListener('message', async (event) => {
+  // Only accept messages from same window
+  if (event.source !== window) return;
+  
+  if (event.data.type && event.data.type === 'ZCASHDEFI_REQUEST') {
+    console.log('Content script received request:', event.data);
+    
+    // Forward to background script
+    const response = await chrome.runtime.sendMessage({
+      action: event.data.action,
+      data: event.data.data
+    });
+    
+    // Send response back to page
+    window.postMessage({
+      type: 'ZCASHDEFI_RESPONSE',
+      id: event.data.id,
+      response: response
+    }, '*');
+  }
+});
+
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'accountsChanged') {
+    window.postMessage({
+      type: 'ZCASHDEFI_EVENT',
+      event: 'accountsChanged',
+      data: request.data
+    }, '*');
+  }
+  
+  if (request.action === 'chainChanged') {
+    window.postMessage({
+      type: 'ZCASHDEFI_EVENT',
+      event: 'chainChanged',
+      data: request.data
+    }, '*');
+  }
+});
+
+// ========================================
+// FILE 4: injected.js (bonus file for Web3 injection)
+// ========================================
+
+(function() {
+  console.log('ZcashDeFi provider injected');
+  
+  let requestId = 0;
+  const pendingRequests = new Map();
+  
+  // Create the provider object
+  const zcashDefi = {
+    isZcashDeFi: true,
+    isConnected: false,
+    selectedAddress: null,
+    chainId: 'zcash-mainnet',
+    
+    // Request method (similar to MetaMask)
+    request: async function(args) {
+      return new Promise((resolve, reject) => {
+        const id = ++requestId;
+        
+        pendingRequests.set(id, { resolve, reject });
+        
+        window.postMessage({
+          type: 'ZCASHDEFI_REQUEST',
+          id: id,
+          action: args.method,
+          data: args.params
+        }, '*');
+        
+        // Timeout after 30 seconds
+        setTimeout(() => {
+          if (pendingRequests.has(id)) {
+            pendingRequests.delete(id);
+            reject(new Error('Request timeout'));
+          }
+        }, 30000);
+      });
+    },
+    
+    // Connect wallet
+    connect: async function() {
+      return this.request({ method: 'connectSite', params: {} });
+    },
+    
+    // Get accounts
+    getAccounts: async function() {
+      const result = await this.request({ method: 'getWalletState', params: {} });
+      return result.data.address ? [result.data.address] : [];
+    },
+    
+    // Send transaction
+    sendTransaction: async function(txParams) {
+      return this.request({ method: 'sendTransaction', params: txParams });
+    },
+    
+    // Get balance
+    getBalance: async function() {
+      const result = await this.request({ method: 'getWalletState', params: {} });
+      return result.data.balance;
+    },
+    
+    // Event listeners
+    on: function(event, callback) {
+      window.addEventListener('message', (e) => {
+        if (e.data.type === 'ZCASHDEFI_EVENT' && e.data.event === event) {
+          callback(e.data.data);
+        }
+      });
+    }
+  };
+  
+  // Listen for responses
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    
+    if (event.data.type === 'ZCASHDEFI_RESPONSE') {
+      const { id, response } = event.data;
+      const pending = pendingRequests.get(id);
+      
+      if (pending) {
+        pendingRequests.delete(id);
+        
+        if (response.success) {
+          pending.resolve(response.data);
+        } else {
+          pending.reject(new Error(response.error));
+        }
+      }
+    }
+  });
+  
+  // Inject into window
+  window.zcashDefi = zcashDefi;
+  
+  // Also inject as 'window.ethereum' for compatibility
+  if (!window.ethereum) {
+    window.ethereum = zcashDefi;
+  }
+  
+  // Dispatch ready event
+  window.dispatchEvent(new Event('zcashdefi#initialized'));
+  
+  console.log('ZcashDeFi provider ready');
+})();
+
+// ========================================
+// FILE 5: popup.html (Updated with script)
+// ========================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZcashDeFi Wallet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 360px;
+            min-height: 600px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+        }
+
+        .header {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .network {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .network-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .balance-section {
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .balance-usd {
+            font-size: 16px;
+            opacity: 0.6;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 0 20px 20px;
+        }
+
+        .action-btn {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .action-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .tabs {
+            display: flex;
+            padding: 0 20px;
+            gap: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab {
+            padding: 12px 0;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            opacity: 1;
+            border-bottom-color: #667eea;
+        }
+
+        .tab:hover {
+            opacity: 1;
+        }
+
+        .content-section {
+            padding: 20px;
+        }
+
+        .token-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .token-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .token-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        .token-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .token-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .token-details {
+            text-align: left;
+        }
+
+        .token-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .token-symbol {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .token-balance {
+            text-align: right;
+        }
+
+        .token-amount {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .token-value {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .activity-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .activity-details {
+            text-align: left;
+        }
+
+        .activity-type {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .activity-amount {
+            text-align: right;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.6;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">ZcashDeFi</div>
+        <div class="network">
+            <div class="network-dot"></div>
+            <span id="networkName">Zcash Mainnet</span>
+        </div>
+        <div class="settings-btn">⚙️</div>
+    </div>
+
+    <div class="balance-section">
+        <div class="balance-label">Total Balance</div>
+        <div class="balance-amount" id="balanceZec">0 ZEC</div>
+        <div class="balance-usd" id="balanceUsd">≈ $0 USD</div>
+    </div>
+
+    <div class="action-buttons">
+        <div class="action-btn" id="sendBtn">
+            <div class="action-icon">📤</div>
+            <div class="action-label">Send</div>
+        </div>
+        <div class="action-btn" id="receiveBtn">
+            <div class="action-icon">📥</div>
+            <div class="action-label">Receive</div>
+        </div>
+        <div class="action-btn" id="swapBtn">
+            <div class="action-icon">🔄</div>
+            <div class="action-label">Swap</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="tokens">Tokens</div>
+        <div class="tab" data-tab="activity">Activity</div>
+        <div class="tab" data-tab="defi">DeFi</div>
+    </div>
+
+    <div class="content-section" id="tokensContent"></div>
+    <div class="content-section" id="activityContent" style="display: none;"></div>
+    <div class="content-section" id="defiContent" style="display: none;">
+        <div class="empty-state">
+            <div class="empty-icon">🚀</div>
+            <div>DeFi features coming soon!</div>
+            <div style="font-size: 12px; margin-top: 10px;">Connect to L2 protocols for swaps, staking, and yield farming</div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
+
+// ========================================
+// FILE 6: popup.js
+// ========================================
+
+// Load wallet state on popup open
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadWalletState();
+  setupEventListeners();
+});
+
+async function loadWalletState() {
+  const response = await chrome.runtime.sendMessage({ action: 'getWalletState' });
+  
+  if (response.success) {
+    const state = response.data;
+    
+    // Update balance
+    document.getElementById('balanceZec').textContent = `${state.balance.zec.toFixed(2)} ZEC`;
+    document.getElementById('balanceUsd').textContent = `≈ $${state.balance.usd.toFixed(2)} USD`;
+    
+    // Update network
+    document.getElementById('networkName').textContent = `Zcash ${state.network.charAt(0).toUpperCase() + state.network.slice(1)}`;
+    
+    // Render tokens
+    renderTokens(state.tokens);
+    
+    // Render activity
+    renderActivity(state.transactions);
+  }
+}
+
+function renderTokens(tokens) {
+  const container = document.getElementById('tokensContent');
+  container.innerHTML = '<div class="token-list">' + tokens.map(token => `
+    <div class="token-item">
+      <div class="token-info">
+        <div class="token-icon">${token.icon}</div>
+        <div class="token-details">
+          <div class="token-name">${token.name}</div>
+          <div class="token-symbol">${token.symbol}</div>
+        </div>
+      </div>
+      <div class="token-balance">
+        <div class="token-amount">${token.amount.toFixed(2)}</div>
+        <div class="token-value">$${token.value.toFixed(2)}</div>
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
+function renderActivity(transactions) {
+  const container = document.getElementById('activityContent');
+  
+  if (transactions.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div>No transactions yet</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = transactions.map(tx => {
+    const icon = tx.type === 'send' ? '📤' : tx.type === 'receive' ? '📥' : '🔄';
+    const timeAgo = formatTimeAgo(tx.time);
+    const amount = tx.type === 'swap' ? `${tx.from} → ${tx.to}` : `${tx.amount > 0 ? '+' : ''}${tx.amount} ${tx.token}`;
+    
+    return `
+      <div class="activity-item">
+        <div class="activity-left">
+          <div class="activity-icon">${icon}</div>
+          <div class="activity-details">
+            <div class="activity-type">${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} ${tx.token || ''}</div>
+            <div class="activity-time">${timeAgo}</div>
+          </div>
+        </div>
+        <div class="activity-amount">${amount}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatTimeAgo(timestamp) {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+  return `${Math.floor(seconds / 86400)} days ago`;
+}
+
+function setupEventListeners() {
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      const tabName = tab.getAttribute('data-tab');
+      document.querySelectorAll('.content-section').forEach(c => c.style.display = 'none');
+      document.getElementById(tabName + 'Content').style.display = 'block';
+    });
+  });
+  
+  // Action buttons
+  document.getElementById('sendBtn').addEventListener('click', () => {
+    alert('Send feature coming soon! This will open a transaction form.');
+  });
+  
+  document.getElementById('receiveBtn').addEventListener('click', async () => {
+    const response = await chrome.runtime.sendMessage({ action: 'getWalletState' });
+    if (response.success && response.data.address) {
+      alert(`Your address:\n${response.data.address}\n\n(Click OK to copy)`);
+      navigator.clipboard.writeText(response.data.address);
+    }
+  });
+  
+  document.getElementById('swapBtn').addEventListener('click', () => {
+    alert('Swap feature coming soon! This will connect to L2 DEX protocols.');
+  });
+}
