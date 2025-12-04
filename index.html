@@ -3,8 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZcashDeFi - Privacy Meets DeFi</title>
+    <title>Shield - Privacy-First Chrome Extension for Zcash</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #f7931a;
+            --primary-dark: #c77a15;
+            --secondary: #1a1a2e;
+            --accent: #ffcd00;
+            --bg-dark: #0d0d14;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --text: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --glow: rgba(247, 147, 26, 0.4);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,27 +26,64 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
-            color: #fff;
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 24px;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(247, 147, 26, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(247, 147, 26, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .glow-orb {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+            animation: orbFloat 15s ease-in-out infinite;
+        }
+
+        .orb-1 { top: -200px; right: -200px; }
+        .orb-2 { bottom: -300px; left: -200px; animation-delay: -7s; }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50px, 50px) scale(1.1); opacity: 0.7; }
         }
 
         /* Navigation */
         nav {
-            padding: 20px 0;
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.05);
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            left: 0;
+            right: 0;
+            padding: 20px 0;
+            background: rgba(13, 13, 20, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
         }
 
         .nav-content {
@@ -42,277 +93,614 @@
         }
 
         .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
             font-size: 24px;
-            font-weight: bold;
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .nav-links {
             display: flex;
-            gap: 30px;
+            gap: 40px;
+            align-items: center;
         }
 
         .nav-links a {
-            color: #fff;
+            color: var(--text-muted);
             text-decoration: none;
+            font-weight: 500;
             transition: all 0.3s;
-            opacity: 0.8;
         }
 
         .nav-links a:hover {
-            opacity: 1;
+            color: var(--primary);
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 30px var(--glow);
         }
 
         /* Hero Section */
         .hero {
-            padding: 100px 0;
-            text-align: center;
-            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 0 80px;
         }
 
-        .hero h1 {
-            font-size: 64px;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .hero-text h1 {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        .hero-text h1 span {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: glow 3s ease-in-out infinite;
         }
 
-        @keyframes glow {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.2); }
-        }
-
-        .hero p {
-            font-size: 24px;
+        .hero-text p {
+            font-size: 20px;
+            color: var(--text-muted);
             margin-bottom: 40px;
-            opacity: 0.9;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
+            max-width: 500px;
         }
 
-        .cta-button {
-            display: inline-block;
-            padding: 18px 45px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 50px;
-            font-size: 18px;
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-primary {
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 16px;
             font-weight: 600;
+            cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-            position: relative;
-            overflow: hidden;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .cta-button:hover {
+        .btn-primary:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+            box-shadow: 0 15px 40px var(--glow);
         }
 
-        .cta-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s;
+        .btn-secondary {
+            padding: 16px 32px;
+            background: transparent;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
         }
 
-        .cta-button:hover::before {
-            left: 100%;
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            background: rgba(247, 147, 26, 0.1);
+        }
+
+        /* Wallet Preview */
+        .wallet-preview {
+            position: relative;
+        }
+
+        .wallet-mockup {
+            width: 380px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
+            animation: walletFloat 6s ease-in-out infinite;
+        }
+
+        @keyframes walletFloat {
+            0%, 100% { transform: perspective(1000px) rotateY(-5deg) rotateX(5deg) translateY(0); }
+            50% { transform: perspective(1000px) rotateY(-5deg) rotateX(5deg) translateY(-20px); }
+        }
+
+        .wallet-header {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .wallet-logo {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .wallet-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .wallet-balance {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .balance-amount {
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .balance-usd {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .wallet-actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 0 20px 20px;
+        }
+
+        .wallet-action {
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .wallet-action:hover {
+            background: rgba(247, 147, 26, 0.1);
+            border-color: var(--primary);
+        }
+
+        .wallet-action-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .wallet-action-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .stat-item p {
+            color: var(--text-muted);
+            font-size: 14px;
         }
 
         /* Features Section */
         .features {
-            padding: 80px 0;
-            background: rgba(255, 255, 255, 0.02);
+            padding: 120px 0;
         }
 
-        .features h2 {
+        .section-header {
             text-align: center;
-            font-size: 48px;
-            margin-bottom: 60px;
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            margin-bottom: 80px;
         }
 
-        .feature-grid {
+        .section-tag {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(247, 147, 26, 0.1);
+            border: 1px solid rgba(247, 147, 26, 0.3);
+            border-radius: 50px;
+            font-size: 14px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .section-header p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
         }
 
         .feature-card {
             padding: 40px;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s;
         }
 
         .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
-            border-color: rgba(102, 126, 234, 0.5);
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(247, 147, 26, 0.1);
         }
 
         .feature-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(247, 147, 26, 0.2), rgba(255, 205, 0, 0.1));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 24px;
         }
 
         .feature-card h3 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #667eea;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
         .feature-card p {
-            opacity: 0.8;
-            line-height: 1.6;
+            color: var(--text-muted);
+            font-size: 15px;
         }
 
-        /* Problem/Solution Section */
-        .problem-solution {
-            padding: 80px 0;
+        /* How It Works */
+        .how-it-works {
+            padding: 120px 0;
+            background: var(--bg-card);
         }
 
-        .ps-grid {
+        .architecture {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .arch-step {
+            text-align: center;
+            position: relative;
+        }
+
+        .arch-step::after {
+            content: '→';
+            position: absolute;
+            right: -30px;
+            top: 50px;
+            font-size: 24px;
+            color: var(--primary);
+        }
+
+        .arch-step:last-child::after {
+            display: none;
+        }
+
+        .arch-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 24px;
+            box-shadow: 0 20px 40px var(--glow);
+        }
+
+        .arch-step h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .arch-step p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* API Section */
+        .api-section {
+            padding: 120px 0;
+        }
+
+        .api-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 60px;
-            margin-top: 40px;
+            align-items: center;
         }
 
-        .ps-card {
+        .api-endpoints {
+            background: #0d0d14;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .api-header {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+        }
+
+        .api-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .api-dot.red { background: #ff5f56; }
+        .api-dot.yellow { background: #ffbd2e; }
+        .api-dot.green { background: #27ca40; }
+
+        .api-code {
+            padding: 24px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .api-line {
+            margin-bottom: 8px;
+        }
+
+        .api-method {
+            color: #4ade80;
+        }
+
+        .api-path {
+            color: var(--primary);
+        }
+
+        .api-comment {
+            color: #6b7280;
+        }
+
+        /* Privacy Section */
+        .privacy-section {
+            padding: 120px 0;
+            background: linear-gradient(135deg, rgba(247, 147, 26, 0.05) 0%, transparent 100%);
+        }
+
+        .privacy-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-top: 60px;
+        }
+
+        .privacy-card {
             padding: 40px;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .ps-card h3 {
-            font-size: 32px;
-            margin-bottom: 20px;
+        .privacy-card h3 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .ps-card ul {
+        .privacy-card ul {
             list-style: none;
-            padding-left: 0;
         }
 
-        .ps-card li {
-            padding: 10px 0;
-            padding-left: 30px;
-            position: relative;
-            opacity: 0.9;
+        .privacy-card li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .ps-card li::before {
-            content: '→';
-            position: absolute;
-            left: 0;
-            color: #667eea;
+        .privacy-card li:last-child {
+            border-bottom: none;
+        }
+
+        .privacy-card li::before {
+            content: '✓';
+            color: var(--primary);
             font-weight: bold;
         }
 
         /* CTA Section */
         .cta-section {
-            padding: 100px 0;
+            padding: 120px 0;
             text-align: center;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
         }
 
-        .cta-section h2 {
+        .cta-box {
+            padding: 80px;
+            background: linear-gradient(135deg, rgba(247, 147, 26, 0.1) 0%, rgba(255, 205, 0, 0.05) 100%);
+            border: 1px solid rgba(247, 147, 26, 0.3);
+            border-radius: 30px;
+        }
+
+        .cta-box h2 {
             font-size: 48px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+        }
+
+        .cta-box p {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
         }
 
         /* Footer */
         footer {
-            padding: 40px 0;
-            text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            opacity: 0.7;
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
         }
 
-        /* Animated background circles */
-        .bg-circle {
-            position: fixed;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
-            pointer-events: none;
-            animation: float 20s infinite;
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .circle1 {
-            width: 500px;
-            height: 500px;
-            top: -250px;
-            right: -250px;
-            animation-delay: 0s;
+        .footer-links {
+            display: flex;
+            gap: 30px;
         }
 
-        .circle2 {
-            width: 400px;
-            height: 400px;
-            bottom: -200px;
-            left: -200px;
-            animation-delay: 5s;
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
         }
 
-        .circle3 {
-            width: 300px;
-            height: 300px;
-            top: 50%;
-            left: 50%;
-            animation-delay: 10s;
+        .footer-links a:hover {
+            color: var(--primary);
         }
 
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(50px, 50px) rotate(90deg); }
-            50% { transform: translate(0, 100px) rotate(180deg); }
-            75% { transform: translate(-50px, 50px) rotate(270deg); }
-        }
-
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 40px; }
-            .hero p { font-size: 18px; }
-            .ps-grid { grid-template-columns: 1fr; gap: 30px; }
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero-content { grid-template-columns: 1fr; text-align: center; }
+            .hero-text p { margin: 0 auto 40px; }
+            .hero-buttons { justify-content: center; }
+            .wallet-preview { display: none; }
+            .features-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .architecture { grid-template-columns: 1fr; }
+            .arch-step::after { display: none; }
+            .api-content { grid-template-columns: 1fr; }
+            .privacy-grid { grid-template-columns: 1fr; }
             .nav-links { display: none; }
         }
     </style>
 </head>
 <body>
-    <!-- Background Animation -->
-    <div class="bg-circle circle1"></div>
-    <div class="bg-circle circle2"></div>
-    <div class="bg-circle circle3"></div>
+    <!-- Background -->
+    <div class="bg-grid"></div>
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
 
     <!-- Navigation -->
     <nav>
         <div class="container">
             <div class="nav-content">
-                <div class="logo">ZcashDeFi</div>
+                <div class="logo">
+                    <div class="logo-icon">🛡️</div>
+                    <span class="logo-text">Shield</span>
+                </div>
                 <div class="nav-links">
                     <a href="#features">Features</a>
-                    <a href="#about">About</a>
-                    <a href="#roadmap">Roadmap</a>
+                    <a href="#how-it-works">How It Works</a>
+                    <a href="#api">API</a>
+                    <a href="#privacy">Privacy</a>
+                    <button class="nav-btn">Install Extension</button>
                 </div>
             </div>
         </div>
@@ -321,73 +709,207 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <h1>Privacy Meets DeFi</h1>
-            <p>The first browser extension wallet bringing DeFi capabilities to Zcash through Layer 2 integration</p>
-            <a href="#" class="cta-button">Get Early Access</a>
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>The First <span>Privacy-Focused</span> DeFi Wallet for Chrome</h1>
+                    <p>Send, receive, and manage ZEC directly from your browser. Built for developers and users who demand privacy without compromising on DeFi capabilities.</p>
+                    <div class="hero-buttons">
+                        <a href="#" class="btn-primary">
+                            <span>🧩</span> Add to Chrome
+                        </a>
+                        <a href="test-dapp.html" class="btn-secondary">View Demo</a>
+                    </div>
+                </div>
+                <div class="wallet-preview">
+                    <div class="wallet-mockup">
+                        <div class="wallet-header">
+                            <div class="wallet-logo">🛡️ Shield</div>
+                            <div class="wallet-status">
+                                <div class="status-dot"></div>
+                                Zcash Regtest
+                            </div>
+                        </div>
+                        <div class="wallet-balance">
+                            <div class="balance-label">Total Balance</div>
+                            <div class="balance-amount">1,798.75 ZEC</div>
+                            <div class="balance-usd">≈ $71,950.00 USD</div>
+                        </div>
+                        <div class="wallet-actions">
+                            <div class="wallet-action">
+                                <div class="wallet-action-icon">📤</div>
+                                <div class="wallet-action-label">Send</div>
+                            </div>
+                            <div class="wallet-action">
+                                <div class="wallet-action-icon">📥</div>
+                                <div class="wallet-action-label">Receive</div>
+                            </div>
+                            <div class="wallet-action">
+                                <div class="wallet-action-icon">🔄</div>
+                                <div class="wallet-action-label">Swap</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Bar -->
+    <section class="stats-bar">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>100%</h3>
+                    <p>Open Source</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Shielded</h3>
+                    <p>Transaction Support</p>
+                </div>
+                <div class="stat-item">
+                    <h3>RESTful</h3>
+                    <p>API Integration</p>
+                </div>
+                <div class="stat-item">
+                    <h3>Regtest</h3>
+                    <p>Development Ready</p>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Features Section -->
     <section class="features" id="features">
         <div class="container">
-            <h2>Why ZcashDeFi?</h2>
-            <div class="feature-grid">
+            <div class="section-header">
+                <span class="section-tag">Features</span>
+                <h2>Everything You Need for Zcash DeFi</h2>
+                <p>A complete wallet solution with full RPC integration, transaction management, and DeFi capabilities.</p>
+            </div>
+            <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">🌐</div>
-                    <h3>Browser Extension</h3>
-                    <p>Seamless integration with your browser. Access DeFi wherever you browse, no mobile restrictions.</p>
+                    <div class="feature-icon">💳</div>
+                    <h3>Wallet Management</h3>
+                    <p>Create accounts, generate addresses, check balances, and manage multiple wallets from one interface.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔗</div>
-                    <h3>L2 Connectivity</h3>
-                    <p>Connect to Layer 2 solutions like Ztarknet for lightning-fast transactions and enhanced scalability.</p>
+                    <div class="feature-icon">📤</div>
+                    <h3>Send Transactions</h3>
+                    <p>Send ZEC to any address with customizable fees. Support for transparent and shielded transactions.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">💱</div>
-                    <h3>Token Swaps</h3>
-                    <p>Trade and swap tokens directly from your wallet with privacy-preserving technology.</p>
+                    <div class="feature-icon">📥</div>
+                    <h3>Receive Funds</h3>
+                    <p>Generate new addresses on-demand. Share your address with QR codes or direct copy.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">📈</div>
-                    <h3>Yield Earning</h3>
-                    <p>Put your Zcash to work. Earn yield through DeFi protocols while maintaining privacy.</p>
+                    <div class="feature-icon">🔍</div>
+                    <h3>Transaction History</h3>
+                    <p>View all your transactions with detailed information including confirmations and status.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
+                    <div class="feature-icon">⛓️</div>
+                    <h3>Blockchain Explorer</h3>
+                    <p>Query blockchain info, block heights, network status, and mining information.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
                     <h3>Privacy First</h3>
-                    <p>Built on Zcash's privacy foundation. Your transactions, your business.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>First Mover</h3>
-                    <p>Be part of the Zcash DeFi revolution before it becomes mainstream.</p>
+                    <p>Built on Zcash's privacy foundation with support for shielded pools and z-addresses.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Problem/Solution Section -->
-    <section class="problem-solution" id="about">
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
         <div class="container">
-            <div class="ps-grid">
-                <div class="ps-card">
-                    <h3>The Problem</h3>
+            <div class="section-header">
+                <span class="section-tag">Architecture</span>
+                <h2>How It Works</h2>
+                <p>A three-layer architecture connecting your browser to the Zcash blockchain.</p>
+            </div>
+            <div class="architecture">
+                <div class="arch-step">
+                    <div class="arch-icon">🧩</div>
+                    <h3>Chrome Extension</h3>
+                    <p>User-friendly interface in your browser. Manage wallets, send transactions, and connect to dApps.</p>
+                </div>
+                <div class="arch-step">
+                    <div class="arch-icon">⚙️</div>
+                    <h3>Backend API</h3>
+                    <p>Express.js server with RESTful endpoints. Handles authentication and RPC translation.</p>
+                </div>
+                <div class="arch-step">
+                    <div class="arch-icon">⛓️</div>
+                    <h3>Zcash Node</h3>
+                    <p>Full zcashd node running in Docker. Supports mainnet, testnet, and regtest modes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- API Section -->
+    <section class="api-section" id="api">
+        <div class="container">
+            <div class="api-content">
+                <div>
+                    <span class="section-tag">Developer API</span>
+                    <h2 style="font-size: 42px; margin: 20px 0;">Built for Developers</h2>
+                    <p style="color: var(--text-muted); margin-bottom: 30px; font-size: 18px;">Full RESTful API with comprehensive endpoints for all Zcash operations. Secure API key authentication included.</p>
+                    <a href="SETUP_AND_TESTING_GUIDE.md" class="btn-primary">View Documentation</a>
+                </div>
+                <div class="api-endpoints">
+                    <div class="api-header">
+                        <div class="api-dot red"></div>
+                        <div class="api-dot yellow"></div>
+                        <div class="api-dot green"></div>
+                    </div>
+                    <div class="api-code">
+                        <div class="api-line"><span class="api-comment"># Wallet Operations</span></div>
+                        <div class="api-line"><span class="api-method">GET</span> <span class="api-path">/api/zcash/wallet/balance</span></div>
+                        <div class="api-line"><span class="api-method">POST</span> <span class="api-path">/api/zcash/wallet/newaccount</span></div>
+                        <div class="api-line"><span class="api-method">GET</span> <span class="api-path">/api/zcash/wallet/unspent</span></div>
+                        <div class="api-line"></div>
+                        <div class="api-line"><span class="api-comment"># Transactions</span></div>
+                        <div class="api-line"><span class="api-method">POST</span> <span class="api-path">/api/zcash/transaction/send</span></div>
+                        <div class="api-line"><span class="api-method">GET</span> <span class="api-path">/api/zcash/transactions</span></div>
+                        <div class="api-line"><span class="api-method">GET</span> <span class="api-path">/api/zcash/transaction/:txid</span></div>
+                        <div class="api-line"></div>
+                        <div class="api-line"><span class="api-comment"># Blockchain</span></div>
+                        <div class="api-line"><span class="api-method">GET</span> <span class="api-path">/api/zcash/blockchain/info</span></div>
+                        <div class="api-line"><span class="api-method">GET</span> <span class="api-path">/api/zcash/network/info</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Section -->
+    <section class="privacy-section" id="privacy">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Privacy</span>
+                <h2>Privacy You Can Trust</h2>
+                <p>Built on Zcash's zero-knowledge proof technology for true financial privacy.</p>
+            </div>
+            <div class="privacy-grid">
+                <div class="privacy-card">
+                    <h3>🔒 Transaction Privacy</h3>
                     <ul>
-                        <li>Zashi wallet is mobile-only</li>
-                        <li>Zcash lacks DeFi applications</li>
-                        <li>No token swapping capabilities</li>
-                        <li>Limited yield opportunities</li>
-                        <li>Desktop users left behind</li>
+                        <li>Shielded transaction support (z_sendmany)</li>
+                        <li>Transparent and unified addresses</li>
+                        <li>Configurable privacy policies</li>
+                        <li>Hidden sender and receiver amounts</li>
                     </ul>
                 </div>
-                <div class="ps-card">
-                    <h3>Our Solution</h3>
+                <div class="privacy-card">
+                    <h3>🛡️ Security Features</h3>
                     <ul>
-                        <li>Chrome extension for desktop access</li>
-                        <li>Layer 2 DeFi integration</li>
-                        <li>Seamless token swaps</li>
-                        <li>Yield farming protocols</li>
-                        <li>Full DeFi ecosystem access</li>
+                        <li>API key authentication</li>
+                        <li>Local node connection (no third parties)</li>
+                        <li>Open source and auditable</li>
+                        <li>No data collection or tracking</li>
                     </ul>
                 </div>
             </div>
@@ -395,18 +917,34 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta-section" id="roadmap">
+    <section class="cta-section">
         <div class="container">
-            <h2>Join the Zcash DeFi Revolution</h2>
-            <p style="font-size: 20px; margin-bottom: 40px; opacity: 0.9;">Be among the first to experience private DeFi</p>
-            <a href="#" class="cta-button">Request Demo Access</a>
+            <div class="cta-box">
+                <h2>Ready to Get Started?</h2>
+                <p>Install the extension and start using Zcash DeFi in your browser today.</p>
+                <div style="display: flex; gap: 16px; justify-content: center;">
+                    <a href="#" class="btn-primary">Install Extension</a>
+                    <a href="SETUP_AND_TESTING_GUIDE.md" class="btn-secondary">Read the Docs</a>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer>
         <div class="container">
-            <p>&copy; 2024 ZcashDeFi. Building the future of private DeFi.</p>
+            <div class="footer-content">
+                <div class="logo">
+                    <div class="logo-icon">🛡️</div>
+                    <span class="logo-text">Shield</span>
+                </div>
+                <div class="footer-links">
+                    <a href="SETUP_AND_TESTING_GUIDE.md">Documentation</a>
+                    <a href="test-dapp.html">Demo</a>
+                    <a href="zcash-api-main/ROUTES.md">API Reference</a>
+                </div>
+                <p style="color: var(--text-muted);">© 2024 Shield</p>
+            </div>
         </div>
     </footer>
 </body>

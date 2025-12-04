@@ -1,7 +1,7 @@
-// ZcashDeFi Content Script
+// Shield Content Script
 // Bridge between web pages and the extension background service worker
 
-console.log('ZcashDeFi content script loaded');
+console.log('Shield content script loaded');
 
 // Inject the Web3-like provider into the page
 const script = document.createElement('script');

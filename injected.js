@@ -1,10 +1,10 @@
-// ZcashDeFi Provider - Injected into web pages
+// Shield Provider - Injected into web pages
 // Provides a Web3-like interface for dApps to interact with Zcash wallet
 
 (function() {
   'use strict';
   
-  console.log('ZcashDeFi provider initializing...');
+  console.log('Shield provider initializing...');
   
   let requestId = 0;
   const pendingRequests = new Map();
@@ -13,7 +13,8 @@
   // Create the provider object
   const zcashDefi = {
     // Provider identification
-    isZcashDeFi: true,
+    isShield: true,
+    isZcashDeFi: true, // Legacy compatibility
     isConnected: false,
     selectedAddress: null,
     chainId: 'zcash-mainnet',
@@ -335,14 +336,14 @@
   window.dispatchEvent(new CustomEvent('zcashdefi#initialized'));
   window.dispatchEvent(new CustomEvent('zcash#initialized'));
   
-  console.log('ZcashDeFi provider ready - Access via window.zcashDefi or window.zcash');
+  console.log('Shield provider ready - Access via window.zcashDefi or window.zcash');
   
   // Announce provider for dApp detection
   window.dispatchEvent(new CustomEvent('eip6963:announceProvider', {
     detail: {
       info: {
-        uuid: 'zcashdefi-wallet-001',
-        name: 'ZcashDeFi Wallet',
+        uuid: 'shield-wallet-001',
+        name: 'Shield',
         icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>',
         rdns: 'com.zcashdefi.wallet'
       },

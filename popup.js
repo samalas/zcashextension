@@ -1,4 +1,4 @@
-// ZcashDeFi Wallet Popup Script
+// Shield Wallet Popup Script
 // Handles UI interactions and communication with background service worker
 
 // ============================================

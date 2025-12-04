@@ -156,12 +156,12 @@ const ZEC_PRICE_USD = 40.00;
 // ============================================
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('ZcashDeFi Wallet installed');
+  console.log('Shield Wallet installed');
   initializeWallet();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  console.log('ZcashDeFi Wallet started');
+  console.log('Shield Wallet started');
   initializeWallet();
 });
 
@@ -611,4 +611,4 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   }
 });
 
-console.log('ZcashDeFi Background Service Worker initialized');
+console.log('Shield Background Service Worker initialized');

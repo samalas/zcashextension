@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ZcashDeFi Wallet",
+  "name": "Shield",
   "version": "1.0.0",
   "description": "Privacy-focused DeFi wallet for Zcash - Connect to your local Zcash node via the zcash-api backend",
   "permissions": [
@@ -16,7 +16,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ZcashDeFi Wallet"
+    "default_title": "Shield"
   },
   "background": {
     "service_worker": "background.js"
